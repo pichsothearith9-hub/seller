@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="km">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Big Payment with SMS</title>
+    <script src="https://js.stripe.com/v3/"></script>
+    <style>
+        body {
+            font-family: 'Roboto', sans-serif;
+            background: #f9f9f9;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        .payment-container {
+            background: #fff;
+            padding: 50px;
+            border-radius: 20px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
+            width: 100%;
+            max-width: 500px;
+        }
+
+        .payment-container h2 {
+            text-align: center;
+            color: #222;
+            margin-bottom: 25px;
+            font-size: 28px;
+        }
+
+        .payment-container label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #555;
+        }
+
+        .payment-container input {
+            width: 100%;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 10px;
+            border: 1px solid #ccc;
+            font-size: 18px;
+        }
+
+        .payment-container button {
+            width: 100%;
+            padding: 18px;
+            background: #E53935;
+            color: white;
+            font-size: 18px;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        .payment-container button:hover {
+            background: #D32F2F;
+        }
+
+        .qr-section {
+            text-align: center;
+            margin-top: 25px;
+        }
+
+        .qr-section img {
+            width: 200px;
+            height: 200px;
+            margin-top: 10px;
+        }
+
+        .footer {
+            text-align: center;
+            margin-top: 30px;
+            font-size: 14px;
+            color: #888;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="payment-container">
+
+        <form id="paymentForm">
+            <label for="email">អ៊ីមែលសម្រាប់បញ្ជាក់</label>
+            <input type="email" id="email" placeholder="បញ្ចូលអ៊ីមែលរបស់អ្នក" required>
+
+            <label for="phone">លេខទូរស័ព្ទសម្រាប់ SMS</label>
+            <input type="tel" id="phone" placeholder="+855xxxxxxxx" required>
+
+            <label for="amount">ចំនួនទឹកប្រាក់ (USD)</label>
+            <input type="number" id="amount" placeholder="បញ្ចូលចំនួនទឹកប្រាក់" min="1" required>
+
+            <button type="submit">បង់ប្រាក់ឥឡូវនេះ</button>
+        </form>
+
+        <div class="qr-section">
+            <p>ឬស្កេន QR Code Mobile Banking:</p>
+            <img id="qrCode" src="../img/photo_2_2026-03-26_23-54-09.jpg" alt="QR Code">
+        </div>
+
+        <div class="footer">&copy; 2026 BigPayment Inc. សិទ្ធិរក្សាទុក។</div>
+    </div>
+
+    <script>
+        const stripe = Stripe('pk_test_YOUR_PUBLISHABLE_KEY');
+        const amountInput = document.getElementById('amount');
+        const qrImg = document.getElementById('qrCode');
+        const emailInput = document.getElementById('email');
+        const phoneInput = document.getElementById('phone');
+
+        // Update QR dynamically
+        amountInput.addEventListener('input', async () => {
+            if (amountInput.value > 0) {
+                const res = await fetch(`/generate-qr?amount=${amountInput.value}`);
+                const data = await res.json();
+                qrImg.src = data.qr;
+            } else qrImg.src = '';
+        });
+
+        // Stripe Checkout
+        document.getElementById('paymentForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const amount = amountInput.value * 100;
+            const email = emailInput.value;
+            const phone = phoneInput.value;
+
+            const response = await fetch('/create-checkout-session', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ amount, email, phone })
+            });
+            const session = await response.json();
+            stripe.redirectToCheckout({ sessionId: session.id });
+        });
+    </script>
+
+</body>
+
+</html>
